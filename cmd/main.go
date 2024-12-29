@@ -2,16 +2,23 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Brotiger/poker-mailer/internal/config"
+	"github.com/Brotiger/poker-mailer/internal/controller"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
 
 	options := []nats.Option{
 		nats.RetryOnFailedConnect(config.Cfg.Nats.RetryOnFailedConnect),
@@ -20,7 +27,7 @@ func main() {
 		nats.PingInterval(time.Duration(config.Cfg.Nats.PingInterval) * time.Millisecond),
 		nats.MaxPingsOutstanding(config.Cfg.Nats.MaxPingOutstanding),
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			log.Warn("nats-connect: disconnected, error: %v", err)
+			log.Warnf("nats-connect: disconnected, error: %v", err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			log.Trace("nats-connect: reconnected")
@@ -55,4 +62,52 @@ func main() {
 
 	cons, err := stream.Consumer(ctx, config.Cfg.Nats.ConsumerName)
 	log.Fatalf("failed to connect with consumer, error: %v", err)
+
+	mailController := controller.NewMailController()
+
+	var wg sync.WaitGroup
+	consumeCtx, err := cons.Consume(func(msg jetstream.Msg) {
+		wg.Add(1)
+		defer wg.Done()
+
+		reqId := (uuid.New()).String()
+
+		log.Tracef("%s, incoming message: %s", reqId, msg.Data())
+
+		if err := msg.Ack(); err != nil {
+			log.Errorf("%s failed to ack msg, error: %v", reqId, err)
+		}
+
+		if err := mailController.Send(ctx, msg); err != nil {
+			log.Errorf("%s failed to send, error: %v", reqId, err)
+		}
+	}, jetstream.PullMaxMessages(config.Cfg.Nats.BatchSize))
+	log.Fatalf("failed to consume, error: %v", err)
+
+	shutdown := make(chan os.Signal, 1)
+	defer close(shutdown)
+
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+	<-shutdown
+
+	gracefulShutdown(consumeCtx, &wg)
+}
+
+func gracefulShutdown(consumeCtx jetstream.ConsumeContext, wg *sync.WaitGroup) {
+	consumeCtx.Stop()
+
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		wg.Wait()
+		done <- struct{}{}
+	}()
+
+	log.Info("graceful shutdown: waiting for task completion")
+	select {
+	case <-done:
+		log.Info("graceful shutdown: task completed successfully")
+	case <-time.Tick(time.Duration(config.Cfg.App.GracefulShutdownTimeoutMS) * time.Millisecond):
+		log.Info("graceful shutdown: timeout, forcing shutdown")
+	}
 }

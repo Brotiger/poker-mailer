@@ -1,11 +1,11 @@
 SHELL := /bin/bash
 
 build:
-	go build -o core_api ./cmd/main.go
+	go build -o mailer ./cmd/main.go
 .PHONY: build
 
 up:
-	./core_api
+	./mailer
 .PHONY: up
 
 run:
