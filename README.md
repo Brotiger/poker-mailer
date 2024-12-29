@@ -15,6 +15,8 @@ source .env
 
 ### Make команды
 ```bash
+make nats-streams-add # создание стрима и подписчика
+
 make build # сборка проекта
 make up # запуск скомпилированного проекта
 make run # запуск без компиляции
