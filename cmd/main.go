@@ -63,7 +63,10 @@ func main() {
 	cons, err := stream.Consumer(ctx, config.Cfg.Nats.ConsumerName)
 	log.Fatalf("failed to connect with consumer, error: %v", err)
 
-	mailController := controller.NewMailController()
+	mailController, err := controller.NewMailController()
+	if err != nil {
+		log.Fatalf("failed to create mail controller, error: %v", err)
+	}
 
 	var wg sync.WaitGroup
 	consumeCtx, err := cons.Consume(func(msg jetstream.Msg) {

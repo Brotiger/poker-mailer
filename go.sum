@@ -1,3 +1,7 @@
+github.com/Brotiger/poker-core_api v0.0.0-20241229212000-af0ee756296e h1:ZZ2drHOvzfttnUhMfr8Cex5XhhVnQER0lNLdIbAPCTo=
+github.com/Brotiger/poker-core_api v0.0.0-20241229212000-af0ee756296e/go.mod h1:3+SiX2vs3lbVBdT8Ysa6hGlZEq2YH/zgLt/dCoBmmlg=
+github.com/Brotiger/poker-core_api v0.0.1 h1:9o6viGY6m7Ww688XxuHrFVBizG0IbQD2PdBSWsy61m8=
+github.com/Brotiger/poker-core_api v0.0.1/go.mod h1:3+SiX2vs3lbVBdT8Ysa6hGlZEq2YH/zgLt/dCoBmmlg=
 github.com/caarlos0/env/v7 v7.1.0 h1:9lzTF5amyQeWHZzuZeKlCb5FWSUxpG1js43mhbY8ozg=
 github.com/caarlos0/env/v7 v7.1.0/go.mod h1:LPPWniDUq4JaO6Q41vtlyikhMknqymCLBw0eX4dcH1E=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
