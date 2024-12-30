@@ -52,21 +52,31 @@ func main() {
 	}
 
 	natsConn, err := nats.Connect(config.Cfg.Nats.Addr, options...)
-	log.Fatalf("failed to connect to nats, error: %v", err)
+	if err != nil {
+		log.Fatalf("failed to connect to nats, error: %v", err)
+	}
 
 	js, err := jetstream.New(natsConn)
-	log.Fatalf("failed to connect to jet stream, error: %v", err)
+	if err != nil {
+		log.Fatalf("failed to connect to jet stream, error: %v", err)
+	}
 
 	stream, err := js.Stream(ctx, config.Cfg.Nats.Stream)
-	log.Fatalf("failed to connect with stream, error: %v", err)
+	if err != nil {
+		log.Fatalf("failed to connect with stream, error: %v", err)
+	}
 
 	cons, err := stream.Consumer(ctx, config.Cfg.Nats.ConsumerName)
-	log.Fatalf("failed to connect with consumer, error: %v", err)
+	if err != nil {
+		log.Fatalf("failed to connect with consumer, error: %v", err)
+	}
 
 	mailController, err := controller.NewMailController()
 	if err != nil {
 		log.Fatalf("failed to create mail controller, error: %v", err)
 	}
+
+	log.Info("application started")
 
 	var wg sync.WaitGroup
 	consumeCtx, err := cons.Consume(func(msg jetstream.Msg) {
@@ -85,7 +95,9 @@ func main() {
 			log.Errorf("%s failed to send, error: %v", reqId, err)
 		}
 	}, jetstream.PullMaxMessages(config.Cfg.Nats.BatchSize))
-	log.Fatalf("failed to consume, error: %v", err)
+	if err != nil {
+		log.Fatalf("failed to consume, error: %v", err)
+	}
 
 	shutdown := make(chan os.Signal, 1)
 	defer close(shutdown)
