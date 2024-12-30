@@ -36,6 +36,7 @@ func NewMailService() (*MailService, error) {
 
 func (ms *MailService) GetMessage(messageType string, data []byte) (string, error) {
 	var body bytes.Buffer
+	var subject string
 
 	template := ms.templateMap[messageType]
 	switch messageType {
@@ -48,6 +49,8 @@ func (ms *MailService) GetMessage(messageType string, data []byte) (string, erro
 		if err := template.Execute(&body, modelRegister); err != nil {
 			return "", fmt.Errorf("failed to tempalte execute, error: %w", err)
 		}
+
+		subject = "Регистрация"
 	case "restore":
 		var modelRestore natsModel.Restore
 		if err := json.Unmarshal(data, &modelRestore); err != nil {
@@ -57,13 +60,11 @@ func (ms *MailService) GetMessage(messageType string, data []byte) (string, erro
 		if err := template.Execute(&body, modelRestore); err != nil {
 			return "", fmt.Errorf("failed to tempalte execute, error: %w", err)
 		}
+
+		subject = "Востановление пароля"
 	}
 
-	message := "MIME-Version: 1.0\r\n" +
-		"Content-Type: text/html; charset=\"UTF-8\"\r\n" +
-		"Subject: Приветственное письмо\r\n\r\n" +
-		body.String()
-
+	message := fmt.Sprintf("MIME-Version: 1.0\r\nContent-Type: text/html; charset=\"UTF-8\"\r\nSubject: %s\r\n\r\n%s", subject, body.String())
 	return message, nil
 }
 
